@@ -1,6 +1,6 @@
 language: python
 python:
-- '3.5'
+- '3.7'
 virtualenv:
   system_site_packages: false
 sudo: false
@@ -13,6 +13,8 @@ before_install:
 - echo $REPO
 - echo $TRAVIS_TAG
 - pwd
+services:
+  - mysql
 addons:
   apt:
     packages:

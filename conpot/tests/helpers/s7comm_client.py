@@ -22,14 +22,16 @@ from conpot.helpers import chr_py3, str_to_bytes
 import struct
 import socket
 import string
-# from conpot.protocols.s7comm.tpkt import cleanse_byte_string
 
 __FILTER = "".join([' '] + [' ' if chr(x) not in string.printable or chr(x) in string.whitespace else chr(x)
                             for x in range(1, 256)])
 
 
+_bytes_to_str = lambda items : (value.decode('ascii') if isinstance(value, bytes) else value for value in items)
+
+
 def StripUnprintable(msg):
-    return msg.translate(__FILTER)
+    return msg.decode('ascii').translate(__FILTER)
 
 
 class TPKTPacket:
@@ -273,6 +275,23 @@ class s7:
             raise S7Error(code)
         return response.data[4:]
 
+    def plc_stop_function(self):
+        pdu_type = 1
+        request_id = 256
+        stop_func_parameter = struct.pack('!B5x10p',
+                                                    0x29,                      # function code
+                                                    str_to_bytes('P_PROGRAM')  # Function Name
+                                          )
+        s7packet = S7Packet(pdu_type,request_id,stop_func_parameter).pack()
+        cotp_packet = COTPDataPacket(s7packet).pack()
+        tpkt_packet = TPKTPacket(cotp_packet).pack()
+        self.s.send(tpkt_packet)
+        reply = self.s.recv(1024)
+        if reply:
+            return S7Packet().unpack(COTPDataPacket().unpack(TPKTPacket().unpack(reply).data).data).data
+        else:
+            return None
+
     def ReadSZL(self, szl_id):
         szl_data = self.Function(
             0x04,                   # request
@@ -315,8 +334,8 @@ def GetIdentity(ip, port, src_tsap, dst_tsap):
                 7: 'Basic Firmware'
             },
             'packer': {
-                (1, 6): lambda packet: "{0:s} v.{2:d}.{3:d}".format(*unpack('!20sHBBH', packet)),
-                (7,): lambda packet: "{0:s} v.{3:d}.{4:d}.{5:d}".format(*unpack('!20sHBBBB', packet))
+                (1, 6): lambda packet: "{0:s} v.{2:d}.{3:d}".format(*_bytes_to_str(unpack('!20sHBBH', packet))),
+                (7,): lambda packet: "{0:s} v.{3:d}.{4:d}.{5:d}".format(*_bytes_to_str(unpack('!20sHBBBB', packet)))
             }
         },
         0x1c: {
@@ -335,9 +354,9 @@ def GetIdentity(ip, port, src_tsap, dst_tsap):
                 11: 'Location designation of a module'
             },
             'packer': {
-                (1, 2, 5): lambda packet: "%s" % packet[:24],
-                (3, 7, 8): lambda packet: "%s" % packet[:32],
-                (4,): lambda packet: "%s" % packet[:26]
+                (1, 2, 5): lambda packet: "%s" % packet[:24].decode('ascii'),
+                (3, 7, 8): lambda packet: "%s" % packet[:32].decode('ascii'),
+                (4,): lambda packet: "%s" % packet[:26].decode('ascii')
             }
         }
     }
@@ -351,7 +370,6 @@ def GetIdentity(ip, port, src_tsap, dst_tsap):
         except S7Error:
             continue
 
-        indexes = szl_dict[szl_id]['indexes']
         packers = szl_dict[szl_id]['packer']
 
         for item in entities:

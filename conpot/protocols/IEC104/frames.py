@@ -252,7 +252,7 @@ class CP16Time(Packet):
 
 class IOA(Packet):
     name = "IOA"
-    fields_desc = [X3BytesField("IOA", 0x010000)]
+    fields_desc = [LEX3BytesField("IOA", 0x010000)]
 
 
 class QOS(Packet):
@@ -486,7 +486,7 @@ class asdu_infobj_14(Packet):
     name = "M_ME_TC_1"
     fields_desc = [
         IOA,
-        IEEEFloatField("FPNumber", 0),
+        FloatField("FPNumber", 0),
         PacketField("QDS", QDS(), QDS),
         PacketField("CP24Time", CP24Time(), CP24Time)]
 
@@ -606,7 +606,7 @@ class asdu_infobj_36(Packet):
     name = "M_ME_TF_1"
     fields_desc = [
         IOA,
-        IEEEFloatField("FPNumber", 0),
+        FloatField("FPNumber", 0),
         PacketField("QDS", QDS(), QDS),
         PacketField("CP56Time", CP56Time(), CP56Time)]
 
@@ -700,7 +700,7 @@ class asdu_infobj_50(Packet):
     name = "C_SE_NC_1"
     fields_desc = [
         IOA,
-        IEEEFloatField("FPNumber", 0),
+        FloatField("FPNumber", 0),
         PacketField("QOS", QOS(), QOS)]
 
 
@@ -789,7 +789,7 @@ class asdu_infobj_63(Packet):
     name = "C_SE_TC_1"
     fields_desc = [
         IOA,
-        IEEEFloatField("FPNumber", 0),
+        FloatField("FPNumber", 0),
         PacketField("QOS", QOS(), QOS),
         PacketField("CP56Time", CP56Time(), CP56Time)]
 
@@ -842,6 +842,16 @@ class asdu_head(Packet):
                    # XByteField("COT", 0x06),
                    XByteField("OrigAddr", 0x00),
                    LEShortField("Addr", station_addr)]
+
+    def __str__(self):
+        asdu_infobj = self.payload
+        infobj_repr = []
+
+        while not isinstance(asdu_infobj, NoPayload):
+            infobj_repr.append(str(asdu_infobj.fields))
+            asdu_infobj = asdu_infobj.payload
+
+        return "{} with {} Objects=[{}]".format(self.payload.name, self.fields, ", ".join(infobj_repr))
 
     def guess_payload_class(self, payload):
         if self.TypeID == 1:

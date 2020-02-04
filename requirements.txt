@@ -1,4 +1,5 @@
 gevent>=1.0
+cffi
 pysnmp
 pysmi
 lxml
@@ -12,7 +13,7 @@ libtaxii>=1.1.0
 xlrd
 crc16
 natsort
-scapy
+scapy==2.4.3rc1
 enum34
 hpfeeds3
 modbus-tk
@@ -21,15 +22,17 @@ stix
 pycrypto
 cybox
 bacpypes==0.17.0
-pyghmi
+pyghmi==1.4.1
 mixbox
 modbus-tk
 cpppo
 pytest
-fs
+fs==2.3.0
 python-slugify
 tftpy
-freezegun
+# some freezegun versions broken
+freezegun!=0.3.13
 pytest
 tox
 pycrypto
+sphinx_rtd_theme
